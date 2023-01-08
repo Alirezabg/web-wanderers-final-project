@@ -3,17 +3,21 @@ on: [push]
 jobs:
   run-github-action:
     runs-on: ubuntu-latest
-    steps: 
+    steps:
       - name: List Files
         run: |
           pwd
           ls
       - name: checkout
         uses: actions/checkout@v1
+      - name: List Files After checkout
+        run: |
+          pwd 
+          ls -la
       - name: Simple JS Actions
         id: greet
         uses: actions/hello-world-javascript-action@main
         with:
-          who-to-greet: 'Mona the Octocat'
+          who-to-greet: "Mona the Octocat"
       - name: Log Greeting Time
         run: echo "${{steps.greet.outputs.time}}"

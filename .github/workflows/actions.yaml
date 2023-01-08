@@ -1,5 +1,5 @@
 name: Actions workflow_call
-on: [push]
+on: [push, pull_request]
 jobs:
   run-github-action:
     runs-on: ubuntu-latest
@@ -7,7 +7,7 @@ jobs:
       - name: List Files
         run: |
           pwd
-          ls
+          ls -a
           echo $GITHUB_SHA
           echo $GITHUB_REPOSITORY
           echo $GITHUB_WORKSPACE

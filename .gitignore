@@ -26,3 +26,8 @@ yarn-error.log*
 api/client-cert.pem
 api/client-key.pem
 api/server-ca.pem
+terraform/terra.json
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
+terraform.tfstate
+terraform/.terraform/providers/registry.terraform.io/hashicorp/google/4.43.0/linux_amd64/terraform-provider-google_v4.43.0_x5

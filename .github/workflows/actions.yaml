@@ -1,12 +1,32 @@
 name: Actions workflow_call
 on:
   push:
+    branches:
+     - master
   pull_request:
-    types: [closed, assigned, opened]
+    branches: #we can not use branches and branches ignore at the same time
+     - master
+     - 'feature/*' #matches feature/ ***
+     - '!feature/featC' #ignore this feature 
+    tags:
+      - 'v1.*'
+    # paths:
+    #   - '**.js'
+    # path-ignore:
+    #   - 'docs/**'
+
+  # repository_dispatch:
+  # schedule:
+  #   - cron: "5 * * * *"
+  # push:
+  # pull_request:
+  #   types: [closed, assigned, opened]
 jobs:
   run-github-action:
     runs-on: ubuntu-latest
     steps:
+      - name: payload
+        run: echo ${{github.event.client_payload.env}}
       - name: List Files
         run: |
           pwd

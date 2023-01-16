@@ -23,9 +23,9 @@ provider "google" {
 }
 resource "google_project_service" "project" {
   service = "compute.googleapis.com"
-  # lifecycle {
-  #   prevent_destroy = true
-  # }
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 resource "google_compute_firewall" "default" {
   name    = "web-firewall"
@@ -66,8 +66,14 @@ resource "google_compute_instance" "virtual_instance" {
     network = "default"
     access_config {}
   }
-#   metadata_startup_script = file("vm_startup_scrip.sh")
-
+  #   metadata_startup_script = file("vm_startup_scrip.sh")
+  service_account {
+    # Google recommends custom service accounts that have cloud-platform scope and permissions granted via IAM Roles.
+    email  = google_service_account.default.email
+    scopes = ["cloud-platform"]
+    //full access or default
+    // list of permissions https://cloud.google.com/sdk/gcloud/reference/alpha/compute/instances/set-scopes#--scopes
+  }
   tags = ["http-server", "https-server", "web"]
 
 }
@@ -85,20 +91,27 @@ resource "google_compute_instance" "virtual_instance2" {
     network = "default"
     access_config {}
   }
-#   metadata_startup_script = file("vm2_startup_script.sh")
-
+  #   metadata_startup_script = file("vm2_startup_script.sh")
+  service_account {
+    # Google recommends custom service accounts that have cloud-platform scope and permissions granted via IAM Roles.
+    email  = google_service_account.default.email
+    scopes = ["cloud-platform"] 
+    //full access or default
+    // list of permissions https://cloud.google.com/sdk/gcloud/reference/alpha/compute/instances/set-scopes#--scopes
+  }
   tags = ["http-server", "https-server", "web"]
 
 }
 
 resource "google_sql_database_instance" "main" {
-  name             = "main-instance"
-  database_version = "POSTGRES_14"
-  region           = "us-central1"
-
+  name                = "main-instance"
+  database_version    = "POSTGRES_14"
+  region              = "us-central1"
+  deletion_protection = false
   settings {
     # Second-generation instance tiers are based on the machine
     # type. See argument reference below.
     tier = "db-f1-micro"
+
   }
 }

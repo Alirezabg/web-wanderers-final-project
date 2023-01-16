@@ -37,7 +37,7 @@ resource "google_compute_firewall" "default" {
 
   allow {
     protocol = "tcp"
-    ports    = ["80", "8000", "5001", "5000"]
+    ports    = ["80", "8080", "3000", "4000"]
   }
 
   source_ranges = ["0.0.0.0/0"]
@@ -66,10 +66,10 @@ resource "google_compute_instance" "virtual_instance" {
     network = "default"
     access_config {}
   }
-  #   metadata_startup_script = file("vm_startup_scrip.sh")
+    metadata_startup_script = file("frontend.sh")
   service_account {
     # Google recommends custom service accounts that have cloud-platform scope and permissions granted via IAM Roles.
-    email  = google_service_account.default.email
+    # email  = google_service_account.default.email
     scopes = ["cloud-platform"]
     //full access or default
     // list of permissions https://cloud.google.com/sdk/gcloud/reference/alpha/compute/instances/set-scopes#--scopes
@@ -91,10 +91,10 @@ resource "google_compute_instance" "virtual_instance2" {
     network = "default"
     access_config {}
   }
-  #   metadata_startup_script = file("vm2_startup_script.sh")
+    metadata_startup_script = file("api-server.sh")
   service_account {
-    # Google recommends custom service accounts that have cloud-platform scope and permissions granted via IAM Roles.
-    email  = google_service_account.default.email
+  #   # Google recommends custom service accounts that have cloud-platform scope and permissions granted via IAM Roles.
+  #   email  = google_service_account.default.email
     scopes = ["cloud-platform"] 
     //full access or default
     // list of permissions https://cloud.google.com/sdk/gcloud/reference/alpha/compute/instances/set-scopes#--scopes

@@ -22,10 +22,8 @@ provider "google" {
   credentials = file("terra.json")
 }
 resource "google_project_service" "project" {
-  service = "compute.googleapis.com"
-  lifecycle {
-    prevent_destroy = true
-  }
+  service            = "compute.googleapis.com"
+  disable_on_destroy = true
 }
 resource "google_compute_firewall" "default" {
   name    = "web-firewall"
@@ -37,7 +35,7 @@ resource "google_compute_firewall" "default" {
 
   allow {
     protocol = "tcp"
-    ports    = ["80", "8080", "3000", "4000"]
+    ports    = ["80", "8080", "3000", "4000","5432"]
   }
 
   source_ranges = ["0.0.0.0/0"]
@@ -63,10 +61,10 @@ resource "google_compute_instance" "virtual_instance" {
     }
   }
   network_interface {
-    network = "default"
+    network = "my-subnet"
     access_config {}
   }
-    metadata_startup_script = file("frontend.sh")
+  metadata_startup_script = file("frontend.sh")
   service_account {
     # Google recommends custom service accounts that have cloud-platform scope and permissions granted via IAM Roles.
     # email  = google_service_account.default.email
@@ -88,14 +86,15 @@ resource "google_compute_instance" "virtual_instance2" {
     }
   }
   network_interface {
-    network = "default"
+    network = "my-subnet"
     access_config {}
   }
-    metadata_startup_script = file("api-server.sh")
+  metadata_startup_script = file("api-server.sh")
+
   service_account {
-  #   # Google recommends custom service accounts that have cloud-platform scope and permissions granted via IAM Roles.
-  #   email  = google_service_account.default.email
-    scopes = ["cloud-platform"] 
+    #   # Google recommends custom service accounts that have cloud-platform scope and permissions granted via IAM Roles.
+    #   email  = google_service_account.default.email
+    scopes = ["cloud-platform"]
     //full access or default
     // list of permissions https://cloud.google.com/sdk/gcloud/reference/alpha/compute/instances/set-scopes#--scopes
   }
@@ -103,15 +102,26 @@ resource "google_compute_instance" "virtual_instance2" {
 
 }
 
-resource "google_sql_database_instance" "main" {
+resource "google_sql_database_instance" "postgres" {
   name                = "main-instance"
   database_version    = "POSTGRES_14"
   region              = "us-central1"
   deletion_protection = false
+
   settings {
     # Second-generation instance tiers are based on the machine
     # type. See argument reference below.
     tier = "db-f1-micro"
 
   }
+  
 }
+output "ip" {
+  value = google_compute_instance.virtual_instance.network_interface.0.network_ip
+}
+output "REACT_APP_API_PATH" {
+  value = google_compute_instance.virtual_instance2.network_interface.0.network_ip
+}
+
+
+

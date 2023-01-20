@@ -36,7 +36,7 @@ const AdminForm = ({ setAddJobActive, jobData, setJobData }) => {
     setForm({ ...form, [key]: value });
   };
 
-	const API_PATH = process.env.REACT_APP_API_PATH;
+	const API_PATH = process.env.REACT_APP_API_PATH || "http://192.168.1.40:4000/api/";
 
   const handleSubmit = async (e) => {
     e.preventDefault();

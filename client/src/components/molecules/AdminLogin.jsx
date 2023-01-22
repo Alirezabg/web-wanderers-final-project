@@ -17,7 +17,7 @@ const AdminLogin = ({ setToken}) => {
   };
 
 	const API_PATH =
-    process.env.REACT_APP_API_PATH || "http://192.168.1.40:4000/api/";
+    process.env.REACT_APP_API_PATH;
 
   const handleLoginSubmit = async (event) => {
    

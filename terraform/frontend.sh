@@ -9,5 +9,4 @@ gcloud auth configure-docker us-central1-docker.pkg.dev -q
 sudo docker pull \
     us-central1-docker.pkg.dev/planar-elevator-374616/client/client-image@sha256:31513e2ef059ced5884f9564134eb56f632d2889ec1f249179969abbeb200636
 sudo docker tag $(docker images "us-central1-docker.pkg.dev/planar-elevator-374616/client/client-image" -q) client:v1
-# sudo docker run --env REACT_APP_API_PATH=http://${output.REACT_APP_API_PATH}/ -d -p 3000:3000 client:v1
-sudo docker run --env REACT_APP_API_PATH=http://34.172.10.19:4000/api/ -d -p 3000:3000 client:v1
+sudo docker run --env REACT_APP_API_PATH = http://10.128.0.5:4000/api/ -d -p 3000:3000 client:v1

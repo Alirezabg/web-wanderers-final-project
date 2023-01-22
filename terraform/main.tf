@@ -23,11 +23,14 @@ provider "google" {
 }
 resource "google_project_service" "project" {
   service            = "compute.googleapis.com"
-  disable_on_destroy = true
+  disable_on_destroy = false
+}
+resource "google_compute_address" "static" {
+  name = "ipv4-address"
 }
 resource "google_compute_firewall" "default" {
   name    = "web-firewall"
-  network = "default"
+  network = "my-network"
 
   allow {
     protocol = "icmp"
@@ -35,7 +38,7 @@ resource "google_compute_firewall" "default" {
 
   allow {
     protocol = "tcp"
-    ports    = ["80", "8080", "3000", "4000","5432"]
+    ports    = ["80", "8080", "3000", "4000", "5432"]
   }
 
   source_ranges = ["0.0.0.0/0"]
@@ -57,13 +60,16 @@ resource "google_compute_instance" "virtual_instance" {
 
   boot_disk {
     initialize_params {
-      image = "debian-cloud/debian-11"
+      image = module.gce-worker-container.source_image
     }
   }
   network_interface {
-    network = "my-subnet"
-    access_config {}
+    network = "default"
+    access_config {
+
+    }
   }
+
   metadata_startup_script = file("frontend.sh")
   service_account {
     # Google recommends custom service accounts that have cloud-platform scope and permissions granted via IAM Roles.
@@ -75,6 +81,111 @@ resource "google_compute_instance" "virtual_instance" {
   tags = ["http-server", "https-server", "web"]
 
 }
+resource "google_compute_disk" "pd" {
+  project = local.project_id
+  name    = "test-data-disk"
+  type    = "pd-ssd"
+  size    = 10
+}
+resource "google_compute_instance" "vm" {
+  machine_type = "e2-micro"
+  zone         = "us-central1-a"
+  name         = "test"
+
+
+  boot_disk {
+    initialize_params {
+      image = module.gce-worker-container.source_image
+    }
+  }
+
+
+
+  network_interface {
+    subnetwork = "default"
+    access_config {}
+  }
+
+
+  labels = {
+    container-vm = module.gce-worker-container.vm_container_label
+  }
+
+  tags = ["container-vm-example", "container-vm-test-disk-instance"]
+
+  service_account {
+    email = "terraform@planar-elevator-374616.iam.gserviceaccount.com"
+    scopes = [
+      "https://www.googleapis.com/auth/cloud-platform",
+    ]
+  }
+}
+module "gce-worker-container" {
+  source = "terraform-google-modules/container-vm/google"
+  container = {
+    image = "gcr.io/google-samples/hello-app:1.0"
+    env = [
+      {
+        name  = "TEST_VAR"
+        value = "Hello World!"
+      }
+    ],
+
+    # Declare volumes to be mounted.
+    # This is similar to how docker volumes are declared.
+    volumeMounts = [
+      {
+        mountPath = "/cache"
+        name      = "tempfs-0"
+        readOnly  = false
+      },
+      {
+        mountPath = "/persistent-data"
+        name      = "data-disk-0"
+        readOnly  = false
+      },
+    ]
+
+    privileged_mode = true
+    activate_tty    = true
+    # custom_command = [
+    #   "./start-worker.sh"
+    # ]
+    env_variables = {
+      Q_CLUSTER_WORKERS = "2"
+      DB_HOST           = "your-database-host"
+      DB_PORT           = "5432"
+      DB_ENGINE         = "django.db.backends.postgresql"
+      DB_NAME           = "db_production"
+      DB_SCHEMA         = "jafar_prd"
+      DB_USER           = "role_jafar_prd"
+      DB_PASS           = "this-is-my-honest-password"
+      DB_USE_SSL        = "True"
+    }
+
+    # This has the permission to download images from Container Registry
+  }
+  volumes = [
+    {
+      name = "tempfs-0"
+
+      emptyDir = {
+        medium = "Memory"
+      }
+    },
+    {
+      name = "data-disk-0"
+
+      gcePersistentDisk = {
+        pdName = "data-disk-0"
+        fsType = "ext4"
+      }
+    },
+  ]
+
+  restart_policy = "Always"
+}
+
 resource "google_compute_instance" "virtual_instance2" {
   name         = "api-server"
   machine_type = "e2-micro"
@@ -82,14 +193,23 @@ resource "google_compute_instance" "virtual_instance2" {
 
   boot_disk {
     initialize_params {
-      image = "debian-cloud/debian-11"
+      image = "cos-stable-80-12739-91-0"
+      size  = "10"
+      type  = "pd-standard"
     }
   }
-  network_interface {
-    network = "my-subnet"
-    access_config {}
+  metadata = {
+    gce-container-declaration = "spec:\n  containers:\n  - name: instance-1\n    image: us-central1-docker.pkg.dev/planar-elevator-374616/quickstart-docker-repo/quickstart-image:tag1\n    args:\n    - ''\n    stdin: false\n    tty: false\n  restartPolicy: Always\n# This container declaration format is not public API and may change without notice. Please\n# use gcloud command-line tool or Google Cloud Console to run Containers on Google Compute Engine.",
+    key                       = "gce-container-declaration"
+    google-logging-enabled    = "true"
   }
-  metadata_startup_script = file("api-server.sh")
+  network_interface {
+    network = "default"
+    access_config {
+
+    }
+  }
+  # metadata_startup_script = file("api-server.sh")
 
   service_account {
     #   # Google recommends custom service accounts that have cloud-platform scope and permissions granted via IAM Roles.
@@ -102,26 +222,21 @@ resource "google_compute_instance" "virtual_instance2" {
 
 }
 
-resource "google_sql_database_instance" "postgres" {
-  name                = "main-instance"
-  database_version    = "POSTGRES_14"
-  region              = "us-central1"
-  deletion_protection = false
+# resource "google_sql_database_instance" "postgres" {
+#   name                = "main-instance"
+#   database_version    = "POSTGRES_14"
+#   region              = "us-central1"
+#   deletion_protection = false
 
-  settings {
-    # Second-generation instance tiers are based on the machine
-    # type. See argument reference below.
-    tier = "db-f1-micro"
+#   settings {
+#     # Second-generation instance tiers are based on the machine
+#     # type. See argument reference below.
+#     tier = "db-f1-micro"
 
-  }
-  
-}
-output "ip" {
-  value = google_compute_instance.virtual_instance.network_interface.0.network_ip
-}
-output "REACT_APP_API_PATH" {
-  value = google_compute_instance.virtual_instance2.network_interface.0.network_ip
-}
+#   }
+
+# }
+
 
 
 

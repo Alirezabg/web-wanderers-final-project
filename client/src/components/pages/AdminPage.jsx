@@ -12,7 +12,7 @@ const AdminPage = ({type}) => {
   const [addJobActive, setAddJobActive] = useState(false);
 
 	const API_PATH =
-    process.env.REACT_APP_API_PATH || "http://192.168.1.40:4000/api/";
+    process.env.REACT_APP_API_PATH;
 
   const fetchUserData = async () => {
     const res = await fetch(API_PATH + "job/signedUp");
